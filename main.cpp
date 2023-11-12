@@ -16,12 +16,13 @@ int Collatz(int num) {
 int main() {
     // Initialization
     //--------------------------------------------------------------------------------------
-    constexpr int screenWidth = 2000;
-    constexpr int screenHeight = 1400;
+    constexpr int screenWidth = 1920;
+    constexpr int screenHeight = 1080;
     int distanceX = 20;
     int distanceY = 20;
     int a = 200;
     
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
 
     SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
