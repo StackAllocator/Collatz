@@ -1,305 +1,429 @@
-#include <iostream>
 #include "raylib.h"
+#include "button.h"
+#include "drawall.h"
+#include "Collatz.h"
+#include "drawhelpers.h"
+#include "algo.h"
+#include "Coordinatesystem.h"
+#include <iostream>
+#include <list>
 
-int Collatz(int num) {
-    if (num == 1) {
-        return num;
-    } else if (num % 2 == 0) {
-        return num / 2;
-    } else {
-        return 3 * num + 1;
-    }
-}
-void checkInputs(int &fps, float &distanceX, float &distanceY,
-    float &zoomMultX, float &zoomMultY, float &offsetX, float &offsetY,
-    int &start, float &speed, int &colorVal, int &anim);
+void checkInputs(int &fps, int &distanceX, int &distanceY,
+                 int &zoomMultX, int &zoomMultY, int &offsetX, int &offsetY,
+                 int &start, int &animationSpeed, int &colorVal, int &sequenz, Vector2& wpadding, bool& pause);
 
-
-enum class DrawOneStates {
-  GET_NUMBER,
-  DRAW_LINE,
-  END_SCREEN,
+enum class DrawOneStates
+{
+    GET_NUMBER = 1,
+    DRAW_ALL = 2,
+    DRAW_ALGO = 3,
+    END_SCREEN = 3,
 };
+
+void setAlgo();
+void increaseMode1();
+void increaseMode2();
 
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
-auto main() -> int {
-    // Initialization
-    //--------------------------------------------------------------------------------------
-    constexpr int screenWidth = 1920;
-    constexpr int screenHeight = 1080;
-    float distanceX = 20;
-    float distanceY = 20;
-    int colorVal = 200;
 
-	// set default DrawOneStates value in case only one series should be drawn
-	DrawOneStates drawOneState = DrawOneStates::GET_NUMBER;
-	int numToCheckOnCollatz{};
-	int key = 0;
-	int count = 0;
-	std::string inputString = "";
+int txtpos = 200;
 
+Color alg_c = {100, 100, 100, 255};
+Button algo = {0, 0, 150, 50, "Algorithm", alg_c, setAlgo};
+Button modeb1 = {350, 0, 150, 50, "MODE1 : AIMD", alg_c, increaseMode1};
+Button modeb2 = {500, 0, 150, 50, "MODE2 : MIMD", alg_c, increaseMode2};
+modes mode1{modes::AIMD};
+modes mode2{modes::MIMD};
+DrawOneStates drawOneState;
+    int it{0};
+auto main() -> int
+{
+    int screenWidth = 1920;
+    int screenHeight = 1080;
+    
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "Collatz Conjecture Visualization");
+    SetTargetFPS(10); // Set our game to run at 60 frames-per-second
 
-    SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+    // Initialization
+    //--------------------------------------------------------------------------------------
+    Vector2 wpadding;
+    wpadding.x = 30;
+    wpadding.y = 30;
+    int distanceX = 40;
+    int distanceY = 40;
+    int colorVal = 200;
+
+    // set default DrawOneStates value in case only one series should be drawn
+    drawOneState = DrawOneStates::GET_NUMBER;
+    int numToCheckOnCollatz{};
+    int key = 0;
+    int count = 0;
+    std::string inputString = "";
+
+    // Buttons -----------------------------------------------------------------
+
     //--------------------------------------------------------------------------------------
     int fps = 0;
-    int anim = 2;
+    int sequenz = 1;
     bool all = false;
-    int s_max = 1;
+    int sequenzItem = 1;
     Color colors[colorVal * 10];
-    float zoomMultX = 1;
-    float zoomMultY = 1;
-    float offsetX = 0;
-    float offsetY = 0;
-    int start = 1;
-    float speed = 1.f;
-    Rectangle drawOneRect = {screenWidth - 200, screenHeight - 300, 150, 50};
+    int zoomMultX = 1.0f;
+    int zoomMultY = 1.0f;
+    int offsetX = 0.0f;
+    int offsetY = 0.0f;
+    int start = sequenz;
+    int animationSpeed = 1;
+    Rectangle drawOneRect = {150, 0, 200, 50};
     Color rectCol = RED;
-	bool drawOne = false;
-
+    bool drawOne = false;
+    int animTest{0};
+    bool pause{false};
+    int num = 1;
+    Coordinatesystem sys{};
+    int startAlgox = 10;
+    int startAlgoy = 5;
+    int K = 20;
     // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
-    {        
+    while (!WindowShouldClose()) // Detect window close button or ESC key
+    {
+        algo.draw();
+        modeb1.draw();
+        modeb2.draw();
+        algo.checkMouse();
+        modeb1.checkMouse();
+        modeb2.checkMouse();
+        
+        if (drawOneState == DrawOneStates::DRAW_ALGO) {
+            if (!pause) {
+                it++;
+            }
+            DrawText(TextFormat("%i", pause), 200, 100, 30, BLACK);
+            if (IsKeyDown(KEY_UP) && IsKeyDown(KEY_LEFT_CONTROL)) {
+                startAlgoy++;
+                it = 1;
+            } else if (IsKeyDown(KEY_DOWN) && IsKeyDown(KEY_LEFT_CONTROL)) {
+                startAlgoy--;
+                if (startAlgoy < 0) {
+                    startAlgoy = 0;
+                }
+                it = 1;
+            }
+            if (IsKeyDown(KEY_RIGHT) && IsKeyDown(KEY_LEFT_CONTROL)) {
+                startAlgox++;
+                it = 1;
+            } else if (IsKeyDown(KEY_LEFT) && IsKeyDown(KEY_LEFT_CONTROL)) {
+                startAlgox--;
+                if (startAlgox < 0) {
+                    startAlgox = 0;
+                }
+                it = 1;
+            }
+            if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_UP)) {
+                K++;
+                it = 1;
+            } else if (IsKeyDown(KEY_LEFT_SHIFT) && IsKeyDown(KEY_DOWN)) {
+                K--;
+                if (K < 1) {
+                    K = 1;
+                }
+                it = 1;
+            }
+            draw(startAlgox, startAlgoy, wpadding, screenHeight, screenWidth, offsetX, offsetY, zoomMultX, zoomMultY, distanceX, distanceY, K, it, mode1, mode2);
+        }
         // Update
         //----------------------------------------------------------------------------------
         fps = ++fps % 1;
         //----------------------------------------------------------------------------------
-
-		Vector2 currentMousePos = { static_cast<float>(GetMouseX()), static_cast<float>(GetMouseY()) };
-        if (currentMousePos.x >= drawOneRect.x && currentMousePos.x <= drawOneRect.x + drawOneRect.width
-            && currentMousePos.y >= drawOneRect.y && currentMousePos.y <= drawOneRect.y + drawOneRect.height) {
-          rectCol = BLUE;
-		  if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-			drawOne = true;
-		  }
+        Vector2 currentMousePos = {static_cast<float>(GetMouseX()), static_cast<float>(GetMouseY())};
+        if (currentMousePos.x >= drawOneRect.x && currentMousePos.x <= drawOneRect.x + drawOneRect.width && currentMousePos.y >= drawOneRect.y && currentMousePos.y <= drawOneRect.y + drawOneRect.height)
+        {
+            rectCol = BLUE;
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                rectCol = GREEN;
+                drawOne = true;
+                drawOneState = DrawOneStates::GET_NUMBER;
+            }
         }
-        else {
-          rectCol = RED;
+        else
+        {
+            rectCol = RED;
         }
         DrawRectangleRec(drawOneRect, rectCol);
-		DrawText("Press me!", drawOneRect.x + 5, drawOneRect.y + 12, 30, BLACK);
+        DrawText("Press me!", drawOneRect.x + 5, drawOneRect.y + 12, 30, BLACK);
 
-        checkInputs(fps, distanceX, distanceY, zoomMultX, zoomMultY, offsetX, offsetY, start, speed, colorVal, anim);
-            BeginDrawing();
-                
-                ClearBackground(RAYWHITE);
-                DrawLine(30, 0, 30, screenHeight, BLACK);
+        checkInputs(fps, distanceX, distanceY, zoomMultX, zoomMultY, offsetX, offsetY, start, animationSpeed, colorVal, sequenz, wpadding, pause);
+        BeginDrawing();
 
-                for (int i = screenHeight - 30; i >= 0; i -= distanceX) {
-                    int n = (int)((screenHeight-30) * zoomMultX)/distanceX - (i * zoomMultX)/distanceX + (offsetY * zoomMultX);     
-                    DrawText(TextFormat("%d", n), 5, i - 5, 15, BLACK);
-                    DrawLine(25, i, 35, i, BLACK);
+        ClearBackground(RAYWHITE);
 
+        Vector2 pos;
+        pos.x = 30;
+        pos.y = screenHeight - 30;
+        Color col;
+        col.r = GetRandomValue(0, 255);
+        col.g = GetRandomValue(0, 255);
+        col.b = GetRandomValue(0, 255);
+        col.a = 255; // alpha value
+
+        // if (sequenz < sizeof(colors)/sizeof(col)) {
+        colors[sequenz] = col;
+        // } else {
+        //    colors.push_back(col);
+        //}
+
+        if (drawOneState == DrawOneStates::DRAW_ALL)
+        {
+            drawall(num, sequenz, sequenzItem, start, colorVal, animationSpeed, screenWidth, screenHeight, pause, distanceX, distanceY, zoomMultX, zoomMultY, offsetX, offsetY, colors, wpadding, sys);
+        }
+
+        else
+        {
+            switch (drawOneState)
+            {
+                // get user input
+            case DrawOneStates::GET_NUMBER:
+                // numToCheckOnCollatz;
+                key = GetKeyPressed();
+
+                DrawText(TextFormat("key: %i", key), screenWidth - 500, 50, 20, BLACK);
+                if (key >= KEY_ZERO && key <= KEY_NINE)
+                {
+                    inputString += key;
+                    ++count;
                 }
-                DrawLine(0, screenHeight - 30, screenWidth, screenHeight - 30, BLACK);
-                for (int i = 0; i < screenWidth; i+=distanceY) {
-                    int n = (int)((i * zoomMultY)/distanceY) + (offsetX * zoomMultY);     
-                    DrawText(TextFormat("%d", n), i-5 + 30, screenHeight - 20, 15, BLACK);
-                    DrawLine(i + 30, screenHeight-25, i + 30, screenHeight-30, BLACK);
+                else if (key == KEY_ENTER)
+                {
+                    drawOneState = DrawOneStates::DRAW_ALL;
                 }
-                
-                Vector2 pos;
-                pos.x = 30;
-                pos.y = screenHeight - 30;
-                int num = 0;
-                Color col;
-                col.r = GetRandomValue(0, 255);
-                col.g = GetRandomValue(0, 255);
-                col.b = GetRandomValue(0, 255);
-                col.a = 255; // alpha value
+                break;
+                // case where one number gets drawn
+            case DrawOneStates::DRAW_ALL:
+                [[likely]]
 
-                colors[anim] = col;
+                // numToCheckOnCollatz = std::atoi(inputString);
+                if (numToCheckOnCollatz == 1)
+                {
+                    drawOneState = DrawOneStates::END_SCREEN;
+                }
+                break;
+            case DrawOneStates::END_SCREEN:
+                break;
+            default:
+                break;
+            }
+        }
 
-				if (!drawOne) {
-				  for (int i = start; i < anim; i++) {
-                    num = i;
-                    int count = 0;
-                    int old_x = 30 - (distanceY * offsetX / zoomMultY);
-                    int old_y = screenHeight - 30 - num * distanceX / zoomMultX + (distanceX * offsetY / zoomMultX);
-                    pos.y = old_y;
-                    pos.x = old_x;
-                    do {
-                        num = Collatz(num);
-                        count++;
-                        old_x = pos.x;
-                        old_y = pos.y;
-                        pos.y = screenHeight - 30 - distanceX * num / zoomMultX + (offsetY * distanceX / zoomMultX);
-                        pos.x = 30 + count * distanceY / zoomMultY - (offsetX * distanceY / zoomMultY);
-                        DrawLine(old_x, old_y, pos.x, pos.y, colors[i]);
-                    } while ((num > 1) && ((count < s_max) || (i < anim - 1)));
-                    
-				  }
-                
-				  if (num == 1 && anim < colorVal) {
-                    anim++;
-                    s_max = 0;
-				  }
-				  pos.x = 30;
-				  pos.y = screenHeight-30;
-				  for (int i = start; i < anim; i++) {
-                    num = i;
-                    int count = 0;
-                    pos.x = 30 - ((offsetX) * distanceY / zoomMultY);
-                    pos.y = screenHeight - 30 - num * distanceX / zoomMultX + (offsetY * distanceX / zoomMultX);
-                    do {
-                        num = Collatz(num);
-                        count++;
-                        DrawCircle(pos.x, pos.y, 3, colors[i]);
-                        pos.y = screenHeight - 30 - distanceX * num / zoomMultX + (offsetY * distanceX / zoomMultX);
-                        pos.x = 30 + count * distanceY / zoomMultY - (offsetX * distanceY / zoomMultY);
-                        
-                        
-                    } while ((num > 1) && ((count < s_max) || (i < anim - 1))); 
-                    DrawCircle(pos.x, pos.y, 3, colors[i]);
-				  }
-                
-				  DrawLine(30, 0, 30, screenHeight, BLACK);
-				  for (int i = screenHeight - 30; i >= 0; i-=distanceX) {
-                    int n = static_cast<int>((screenHeight-30) * zoomMultX)/distanceX-(i * zoomMultX)/distanceX + (offsetY * zoomMultX);     
-                    DrawText(TextFormat("%i", n), 5, i-5, 15, BLACK);
-                    DrawLine(25, i, 35, i, BLACK);
-                   
-				  }
-				  DrawLine(0, screenHeight - 30, screenWidth, screenHeight - 30, BLACK);
-				  for (int i = 0; i < screenWidth; i+=distanceY) {
-                    int n = (int)((i * zoomMultY)/distanceY) + (offsetX * zoomMultY);     
-                    DrawText(TextFormat("%i", n), i-5 + 30, screenHeight - 20, 15, BLACK);
-                    DrawLine(i + 30, screenHeight-25, i + 30, screenHeight-30, BLACK);
-				  }
-				}
+        DrawText(TextFormat("Mode: %i", drawOneState), screenWidth - 500, 600, 20, BLACK);
+        // -----------------------------------------------------------------------------------------------------------------------------------
+        // display test
 
-				else {
-				  switch(drawOneState) {
-					// get user input
-				  case DrawOneStates::GET_NUMBER:
-					// numToCheckOnCollatz;
-					while (key != KEY_ENTER) {
-					  key = GetKeyPressed();
-					  if (key >= KEY_ZERO && key <= KEY_NINE) {
-						inputString += key;
-						++count;
-					  }
-					}
-					break;
-					// case where one number gets drawn
-				  case DrawOneStates::DRAW_LINE: [[likely]]
+        // -----------------------------------------------------------------------------------------------------------------------------------
 
-					// numToCheckOnCollatz = std::atoi(inputString);
-					if (numToCheckOnCollatz == 1) {
-					  drawOneState = DrawOneStates::END_SCREEN;
-					}
-					break;
-				  case DrawOneStates::END_SCREEN:
-					break;
-				  default:
-					break;
-				  }
-				}
-
-                s_max+=speed;
-                int txtpos = 200;
-
-				// -----------------------------------------------------------------------------------------------------------------------------------
-				// display test
-                DrawText(TextFormat("FPS: %i", fps), screenWidth - txtpos, 50, 20, BLACK);
-                DrawText(TextFormat("s_max: %i", s_max), screenWidth - txtpos, 100, 20, BLACK);
-                DrawText(TextFormat("anim: %i/%i", anim, colorVal), screenWidth - txtpos, 150, 20, BLACK);
-                DrawText(TextFormat("start: %i <> %i", start, colorVal), screenWidth - txtpos, 200, 20, BLACK);
-                DrawText(TextFormat("zoomMultX: %i", zoomMultX), screenWidth - txtpos, 250, 20, BLACK);
-                DrawText(TextFormat("zoomMultY: %i", zoomMultY), screenWidth - txtpos, 300, 20, BLACK);
-                DrawText(TextFormat("offsetX: %i", offsetX), screenWidth - txtpos, 350, 20, BLACK);
-                DrawText(TextFormat("offsetY: %i", offsetY), screenWidth - txtpos, 400, 20, BLACK);
-                DrawText(TextFormat("color: (%d, %d, %d)", col.r, col.g, col.b), screenWidth - txtpos, 450, 20, BLACK);
-                DrawText(TextFormat("num: %i", num), screenWidth - txtpos, 500, 20, BLACK);
-                DrawText(TextFormat("Speed: %i", speed), screenWidth - txtpos, 550, 20, BLACK);
-				// -----------------------------------------------------------------------------------------------------------------------------------
-
-            EndDrawing();
+        EndDrawing();
         //----------------------------------------------------------------------------------
     }
     //--------------------------------------------------------------------------------------
-    CloseWindow();        // Close window and OpenGL context
+    CloseWindow(); // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
 
     return 0;
 }
 
+void setAlgo() {
+    drawOneState = DrawOneStates::DRAW_ALGO;
+}
 
-void checkInputs(int &fps, float &distanceX, float &distanceY,
-    float &zoomMultX, float &zoomMultY, float &offsetX, float &offsetY,
-    int &start, float &speed, int &colorVal, int &anim) {
-            if (IsKeyDown(KEY_UP) && fps == 0) {
-                distanceX++;
-                if (distanceX >= 80 && zoomMultX > 1) {
-                    distanceX = 40;
-                    zoomMultX /= 2;
-                }
-                
-                if (zoomMultX < 1) {
-                    zoomMultX = 1;
-                    distanceX = 80;
-                }
-                
-        // Draw
-            } else if (IsKeyDown(KEY_DOWN) && fps == 0) {
-                distanceX--;
-                if (distanceX <= 40) {
-                    distanceX = 80;
-                    zoomMultX *= 2;
-                }
-            }
-            if (IsKeyDown(KEY_RIGHT) && fps == 0) {
-                distanceY++;
-                if (distanceY >= 80 && zoomMultY > 1) {
-                    distanceY = 40;
-                    zoomMultY /= 2;
-                }
-                
-                if (zoomMultY < 1) {
-                    zoomMultY = 1;
-                    distanceY = 80;
-                }
-                
-            } else if (IsKeyDown(KEY_LEFT) && fps == 0) {
-                distanceY--;
-                if (distanceY <= 40) {
-                    distanceY = 80;
-                    zoomMultY *= 2;
-                }
-            }
-            if (IsKeyDown(KEY_PERIOD) && !IsKeyDown(KEY_LEFT_CONTROL) && colorVal > 1) {
-                colorVal--;
-            }
-            if (IsKeyDown(KEY_COMMA) && !IsKeyDown(KEY_LEFT_CONTROL)) {
-                colorVal++;
-            }
-            if (IsKeyDown(KEY_PERIOD) && IsKeyDown(KEY_LEFT_CONTROL) && start > 1) {
-                start--;
-            }
-            if (IsKeyDown(KEY_COMMA) && IsKeyDown(KEY_LEFT_CONTROL) && start < anim - 1) {
-                start++;
-            }
-            
-            if (IsKeyDown(KEY_D)) {
-                offsetX++;
-            }
-            if (IsKeyDown(KEY_A) && offsetX > 0) {
-                offsetX--;
-            }
-            if (IsKeyDown(KEY_L)) {
-                speed++;
-            }
-            if (IsKeyDown(KEY_H) && speed > 1) {
-                speed--;
-            }
-            
-            if (IsKeyDown(KEY_W)) {
-                offsetY++;
-            }
-            if (IsKeyDown(KEY_S) && offsetY > 0) {
-                offsetY--;
-            }
+void increaseMode1() {
+    it = 1;
+    switch(mode1){
+        case modes::AIAD:
+            mode1 = modes::AIMD;
+            modeb1.setContent("MODE : AIMD");
+            break;
+        case modes::AIMD:
+            mode1 = modes::MIAD;
+            modeb1.setContent("MODE : MIAD");
+            break;
+        case modes::MIAD:
+            mode1 = modes::MIMD;
+            modeb1.setContent("MODE : MIMD");
+            break;
+        case modes::MIMD:
+            mode1 = modes::AIAD;
+            modeb1.setContent("MODE : AIAD");
+            break;
+        default:
+            std::cout << "something did not work";
+    }
+}
+
+void increaseMode2() {
+     it = 1;
+    switch(mode2){
+        case modes::AIAD:
+            mode2 = modes::AIMD;
+            modeb2.setContent("MODE : AIMD");
+            break;
+        case modes::AIMD:
+            mode2 = modes::MIAD;
+            modeb2.setContent("MODE : MIAD");
+            break;
+        case modes::MIAD:
+            mode2 = modes::MIMD;
+            modeb2.setContent("MODE : MIMD");
+            break;
+        case modes::MIMD:
+            mode2 = modes::AIAD;
+            modeb2.setContent("MODE : AIAD");
+            break;
+        default:
+            std::cout << "something did not work";
+    }
+}
+
+void checkInputs(int &fps, int &distanceX, int &distanceY,
+                 int &zoomMultX, int &zoomMultY, int &offsetX, int &offsetY,
+                 int &start, int &animationSpeed, int &colorVal, int &sequenz, Vector2& wpadding, bool& pause)
+{
+    // Zoom y-direction
+    if (IsKeyDown(KEY_UP) && !IsKeyDown(KEY_LEFT_CONTROL) &&!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y) && fps == 0)
+    {
+        distanceY++;
+        if (distanceY >= 40 && zoomMultY > 1)
+        {
+            distanceY = 20;
+            zoomMultY /= 2;
+        }
+
+        if (zoomMultY < 1)
+        {
+            zoomMultY = 1;
+            distanceY = 20;
+        }
+    }
+    else if (IsKeyDown(KEY_DOWN) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y) && fps == 0)
+    {
+        distanceY--;
+        if (distanceY <= 20)
+        {
+            distanceY = 40;
+            zoomMultY *= 2;
+        }
+    }
+    // Zoom x-direction
+    if (IsKeyDown(KEY_RIGHT) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && fps == 0)
+    {
+        distanceX++;
+        if (distanceX >= 40 && zoomMultX > 1)
+        {
+            distanceX = 20;
+            zoomMultX /= 2;
+        }
+
+        if (zoomMultX < 1)
+        {
+            zoomMultX = 1;
+            distanceX = 40;
+        }
+    }
+    else if (IsKeyDown(KEY_LEFT) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && fps == 0)
+    {
+        distanceX--;
+        if (distanceX <= 20)
+        {
+            distanceX = 40;
+            zoomMultX *= 2;
+        }
+    }
+    // adjust maximum number for sequenzes
+    if (IsKeyDown(KEY_PERIOD) && !IsKeyDown(KEY_LEFT_CONTROL) && colorVal > 1)
+    {
+        colorVal--;
+    }
+    if (IsKeyDown(KEY_COMMA) && !IsKeyDown(KEY_LEFT_CONTROL))
+    {
+        colorVal++;
+    }
+
+    // adjust minimum number for sequenzes
+    if (IsKeyDown(KEY_PERIOD) && IsKeyDown(KEY_LEFT_CONTROL) && start > 1)
+    {
+        start--;
+    }
+    if (IsKeyDown(KEY_COMMA) && IsKeyDown(KEY_LEFT_CONTROL) && start < sequenz - 1)
+    {
+        start++;
+    }
+
+    // Move Graph in x-direction
+    if (IsKeyDown(KEY_D))
+    {
+        offsetX += zoomMultX;
+    }
+    if (IsKeyDown(KEY_A))
+    {
+        offsetX -= zoomMultX;
+    }
+    // Move Graph in y-direction
+    if (IsKeyDown(KEY_W))
+    {
+        offsetY += zoomMultY;
+    }
+    if (IsKeyDown(KEY_S))
+    {
+        offsetY -= zoomMultY;
+    }
+
+    // change speed for animation
+    if (IsKeyDown(KEY_L))
+    {
+        animationSpeed++;
+        if (animationSpeed == 0)
+        {
+            animationSpeed = 1;
+        }
+
+        DrawText(TextFormat("animationSpeed: %i", animationSpeed + 1), 400, 150, 20, BLACK);
+    }
+    if (IsKeyDown(KEY_H))
+    {
+        animationSpeed -= 1;
+        if (animationSpeed == 0)
+        {
+            animationSpeed = -2;
+        }
+
+        DrawText(TextFormat("animationSpeed: %i", animationSpeed + 1), 400, 150, 20, BLACK);
+    }
+    // Adjust padding
+    if (IsKeyDown(KEY_X) && IsKeyDown(KEY_UP))
+    {
+        wpadding.x += distanceX;
+    }
+    if (IsKeyDown(KEY_X) && IsKeyDown(KEY_DOWN) && wpadding.x >= 0)
+    {
+        wpadding.x -= distanceX;
+    }
+    if (IsKeyDown(KEY_Y) && IsKeyDown(KEY_UP))
+    {
+        wpadding.y += static_cast<float>(distanceY);
+
+        DrawText(TextFormat("wpadding: %i", wpadding.y), 400, 150, 20, BLACK);
+    }
+    if (IsKeyDown(KEY_Y) && IsKeyDown(KEY_DOWN) && wpadding.y >= 0)
+    {
+        wpadding.y -= distanceY;
+        DrawText(TextFormat("wpadding: %i", wpadding.y), 400, 150, 20, BLACK);
+    }
+    if (IsKeyDown(KEY_SPACE))
+    {
+        std::cout << "hey";
+        pause = !pause;
+        std::cout << pause;
+    }
 }
