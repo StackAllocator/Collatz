@@ -28,6 +28,23 @@ Coordinatesystem::Coordinatesystem(Coordinatesystem& system) :
     , m_paddingY(system.getPadding().y) 
     {}
 
+Coordinatesystem::Coordinatesystem(float x, float y, float width, float height, float zoomX, float zoomY, float distanceX, float distanceY, float offsetX, float offsetY, char* labelX, char* labelY, float paddingX, float paddingY) :
+    m_x(x)
+    , m_y(y)
+    , m_ZoomX(zoomX)
+    , m_ZoomY(zoomY)
+    , m_DistanceX(distanceX)
+    , m_DistanceY(distanceY)
+    , m_LabelX(labelX)
+    , m_LabelY(labelY)
+    , m_OffsetX(offsetX)
+    , m_OffsetY(offsetY) 
+    , m_width(width)
+    , m_height(height) 
+    , m_paddingX(paddingX)
+    , m_paddingY(paddingY) 
+    {}
+
 Vector2 Coordinatesystem::getZoom(){
     return Vector2{m_ZoomX, m_ZoomY};
 }
@@ -95,54 +112,69 @@ void Coordinatesystem::setPaddingY(float padding) {
     m_paddingY = padding;
 }
 
+void Coordinatesystem::setX(float x) {
+    m_x = x;
+}
+void Coordinatesystem::setY(float y) {
+    m_y = y;
+}
+
+
+float Coordinatesystem::adjust(float val, bool x) {
+    if (x) {
+        return (m_paddingX + val * m_DistanceX / m_ZoomX - m_OffsetX * m_DistanceX / m_ZoomX);
+    } else {
+        return (m_height - m_paddingY - val * m_DistanceY / m_ZoomY + m_OffsetY * m_DistanceY / m_ZoomY);
+    }
+}
 
 void Coordinatesystem::update() {
-    if (IsKeyDown(KEY_UP) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y))
+    if (IsKeyDown(KEY_UP) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y) && !IsKeyDown(KEY_LEFT_CONTROL) &&!IsKeyDown(KEY_LEFT_SHIFT))
     {
-        setDistanceY(m_DistanceY + 1.0f);
-        if (m_DistanceY >= 80 && m_ZoomY > 1)
+        m_DistanceY++;
+        if (m_DistanceY >= 40 && m_ZoomY > 1)
         {
-            setDistanceY(40.0f);
-            setZoomY(m_ZoomY/2);
+            m_DistanceY = 20.0f;
+            m_ZoomY/=2;
         }
 
         if (m_ZoomY < 1)
         {
             m_ZoomY = 1;
-            m_DistanceY = 80;
+            m_DistanceY = 40;
         }
     }
-    else if (IsKeyDown(KEY_DOWN) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y))
+    else if (IsKeyDown(KEY_DOWN) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y) && !IsKeyDown(KEY_LEFT_CONTROL) &&!IsKeyDown(KEY_LEFT_SHIFT))
     {
         m_DistanceY--;
-        if (m_DistanceY <= 40)
+        if (m_DistanceY <= 20)
         {
-            m_DistanceY = 80;
+            m_DistanceY = 40;
             m_ZoomY *= 2;
         }
     }
     // Zoom x-direction
-    if (IsKeyDown(KEY_RIGHT))
+    if (IsKeyDown(KEY_RIGHT) && !IsKeyDown(KEY_LEFT_CONTROL) &&!IsKeyDown(KEY_LEFT_SHIFT))
     {
         m_DistanceX++;
-        if (m_DistanceX >= 80 && m_ZoomX > 1)
+        if (m_DistanceX >= 40 && m_ZoomX > 1)
         {
-            m_DistanceX = 40;
+            m_DistanceX = 20;
             m_ZoomX /= 2;
         }
 
         if (m_ZoomX < 1)
         {
             m_ZoomX = 1;
-            m_DistanceX = 80;
+            m_DistanceX = 40;
         }
     }
-    else if (IsKeyDown(KEY_LEFT))
+    else if (IsKeyDown(KEY_LEFT) && !IsKeyDown(KEY_LEFT_CONTROL) &&!IsKeyDown(KEY_LEFT_SHIFT))
     {
         m_DistanceX--;
-        if (m_DistanceX <= 40)
+        if (m_DistanceX <= 20)
         {
-            m_DistanceX = 80;
+            m_DistanceX = 40;
             m_ZoomX *= 2;
         }
     }
@@ -201,9 +233,9 @@ void Coordinatesystem::update() {
     DrawText(TextFormat("ZoomY: %i", m_ZoomY), 500, 500, 20, BLACK);
     DrawText(TextFormat("OffsetX: %i", m_OffsetX), 500, 550, 20, BLACK);
     DrawText(TextFormat("OffsetY: %i", m_OffsetY), 500, 600, 20, BLACK);
-    draw();
+    //draw();
 }
-void Coordinatesystem::draw() {
+void Coordinatesystem::draw(bool line) {
     DrawText(TextFormat("paddingX: %i", m_paddingX), 900, 50, 20, BLACK);
     DrawText(TextFormat("paddingY: %i", m_paddingY), 900, 100, 20, BLACK);
     DrawText(TextFormat("x: %i", m_x), 900, 150, 20, BLACK);
@@ -216,19 +248,30 @@ void Coordinatesystem::draw() {
     DrawText(TextFormat("ZoomY: %i", m_ZoomY), 900, 500, 20, BLACK);
     DrawText(TextFormat("OffsetX: %i", m_OffsetX), 900, 550, 20, BLACK);
     DrawText(TextFormat("OffsetY: %i", m_OffsetY), 900, 600, 20, BLACK);
-    DrawLine(m_paddingX, m_y, m_paddingX, m_y + m_height, BLACK);
+    DrawLine(m_x + m_paddingX, m_y, m_x + m_paddingX, m_y + m_height, BLACK);
     for (int i = 0; i <= m_height - m_paddingY; i += m_DistanceY)
     {
         int n = (int)((i * m_ZoomY) / m_DistanceY) + (m_OffsetY);
-        DrawText(TextFormat("%i", n), 5, m_y + m_height - m_paddingY - i, 15, BLUE);
-        DrawLine(m_x + m_paddingX - 5, m_y + m_height - m_paddingY - i, m_x + m_paddingX + 5, m_y + m_height - m_paddingY - i, BLACK);
+        DrawText(TextFormat("%i", n), m_x + 5, m_y + m_height - m_paddingY - i, 15, BLUE);
+        if (line) {
+            DrawLine(m_x + m_paddingX - 5, m_y + m_height - m_paddingY - i, m_x + m_width, m_y + m_height - m_paddingY - i, BLACK);
+                    
+        } else {
+
+            DrawLine(m_x + m_paddingX - 5, m_y + m_height - m_paddingY - i, m_x + m_paddingX + 5, m_y + m_height - m_paddingY - i, BLACK);
+        }
     }
     DrawLine(m_x, m_y + m_height - m_paddingY, m_x + m_width, m_y + m_height - m_paddingY, BLACK);
-    for (int i = 0; i < m_x + m_width; i += m_DistanceX)
+    for (int i = 0; i < m_x + m_width - m_paddingX; i += m_DistanceX)
     {
         int n = (i * m_ZoomX) / m_DistanceX + (m_OffsetX);
-        DrawText(TextFormat("%i", n), m_paddingX + i, m_y + m_height - m_paddingY + 10, 15, BLACK);
-        DrawLine(m_x + m_paddingX + i, m_y + m_height - m_paddingY + 5, m_x + m_paddingX + i, m_y + m_height - m_paddingY - 5, BLACK);
+        DrawText(TextFormat("%i", n), m_x + m_paddingX + i, m_y + m_height - m_paddingY + 10, 15, BLACK);
+        if (line) {
+            DrawLine(m_x + m_paddingX + i, m_y + m_height - m_paddingY - m_height, m_x + m_paddingX + i, m_y + m_height - m_paddingY + 5, BLACK);
+                    
+        } else {
+            DrawLine(m_x + m_paddingX + i, m_y + m_height - m_paddingY + 5, m_x + m_paddingX + i, m_y + m_height - m_paddingY - 5, BLACK);
+        }
     }
     DrawLine(m_x, (m_y + m_height - m_paddingY), m_x + m_width, m_y + m_height - m_paddingY, GREEN);
 }

@@ -29,7 +29,7 @@ void increaseMode2();
 //------------------------------------------------------------------------------------
 
 int txtpos = 200;
-
+Button buttons[10];
 Color alg_c = {100, 100, 100, 255};
 Button algo = {0, 0, 150, 50, "Algorithm", alg_c, setAlgo};
 Button modeb1 = {350, 0, 150, 50, "MODE1 : AIMD", alg_c, increaseMode1};
@@ -37,15 +37,23 @@ Button modeb2 = {500, 0, 150, 50, "MODE2 : MIMD", alg_c, increaseMode2};
 modes mode1{modes::AIMD};
 modes mode2{modes::MIMD};
 DrawOneStates drawOneState;
-    int it{0};
+Vector2 AIADf{2, 2};
+Vector2 AIMDf{2, 2};
+Vector2 MIADf{2, 2};
+Vector2 MIMDf{2, 2};
+int it{0};
+Coordinatesystem sys{100.0f, 100.0f, 500, 500};
 auto main() -> int
 {
+    buttons[0] = algo;
+    buttons[1] = modeb1;
+    buttons[2] = modeb2;
     int screenWidth = 1920;
     int screenHeight = 1080;
     
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "Collatz Conjecture Visualization");
-    SetTargetFPS(10); // Set our game to run at 60 frames-per-second
+    SetTargetFPS(60); // Set our game to run at 60 frames-per-second
 
     // Initialization
     //--------------------------------------------------------------------------------------
@@ -83,13 +91,16 @@ auto main() -> int
     int animTest{0};
     bool pause{false};
     int num = 1;
-    Coordinatesystem sys{};
     int startAlgox = 10;
     int startAlgoy = 5;
     int K = 20;
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
+        sys.update();
+        // sys.draw();
+        screenWidth = GetScreenWidth();
+        screenHeight = GetScreenHeight();
         algo.draw();
         modeb1.draw();
         modeb2.draw();
@@ -132,7 +143,7 @@ auto main() -> int
                 }
                 it = 1;
             }
-            draw(startAlgox, startAlgoy, wpadding, screenHeight, screenWidth, offsetX, offsetY, zoomMultX, zoomMultY, distanceX, distanceY, K, it, mode1, mode2);
+            draw(startAlgox, startAlgoy, K, it, mode1, mode2, AIADf, AIMDf, MIADf, MIMDf, sys);
         }
         // Update
         //----------------------------------------------------------------------------------
@@ -156,7 +167,7 @@ auto main() -> int
         DrawRectangleRec(drawOneRect, rectCol);
         DrawText("Press me!", drawOneRect.x + 5, drawOneRect.y + 12, 30, BLACK);
 
-        checkInputs(fps, distanceX, distanceY, zoomMultX, zoomMultY, offsetX, offsetY, start, animationSpeed, colorVal, sequenz, wpadding, pause);
+        //checkInputs(fps, distanceX, distanceY, zoomMultX, zoomMultY, offsetX, offsetY, start, animationSpeed, colorVal, sequenz, wpadding, pause);
         BeginDrawing();
 
         ClearBackground(RAYWHITE);
@@ -293,24 +304,32 @@ void checkInputs(int &fps, int &distanceX, int &distanceY,
     // Zoom y-direction
     if (IsKeyDown(KEY_UP) && !IsKeyDown(KEY_LEFT_CONTROL) &&!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y) && fps == 0)
     {
+        sys.setDistanceY(sys.getDistance().y+1);
         distanceY++;
-        if (distanceY >= 40 && zoomMultY > 1)
+        if (distanceY >= 40 && zoomMultY > 1 || sys.getDistance().y >= 40 && sys.getZoom().y > 1)
         {
+            sys.setDistanceY(20);
+            sys.setZoomY(sys.getZoom().y / 2);
             distanceY = 20;
             zoomMultY /= 2;
         }
 
-        if (zoomMultY < 1)
+        if (zoomMultY < 1 || sys.getZoom().y < 1)
         {
+            sys.setDistanceY(20);
+            sys.setZoomY(1);
             zoomMultY = 1;
             distanceY = 20;
         }
     }
     else if (IsKeyDown(KEY_DOWN) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y) && fps == 0)
     {
+        sys.setDistanceY(sys.getDistance().y - 1);
         distanceY--;
-        if (distanceY <= 20)
+        if (distanceY <= 20 || sys.getDistance().y <= 20)
         {
+            sys.setDistanceY(40);
+            sys.setZoomY(sys.getZoom().y * 2);
             distanceY = 40;
             zoomMultY *= 2;
         }
@@ -318,24 +337,32 @@ void checkInputs(int &fps, int &distanceX, int &distanceY,
     // Zoom x-direction
     if (IsKeyDown(KEY_RIGHT) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && fps == 0)
     {
+        sys.setDistanceX(sys.getDistance().x + 1);
         distanceX++;
         if (distanceX >= 40 && zoomMultX > 1)
         {
+            sys.setDistanceX(20);
+            sys.setZoomX(sys.getZoom().x / 2);
             distanceX = 20;
             zoomMultX /= 2;
         }
 
         if (zoomMultX < 1)
         {
+            sys.setDistanceX(40);
+            sys.setZoomX(1);
             zoomMultX = 1;
             distanceX = 40;
         }
     }
     else if (IsKeyDown(KEY_LEFT) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && fps == 0)
     {
+        sys.setDistanceX(sys.getDistance().x - 1);
         distanceX--;
         if (distanceX <= 20)
         {
+            sys.setDistanceX(40);
+            sys.setZoomX(sys.getZoom().x * 2);
             distanceX = 40;
             zoomMultX *= 2;
         }
@@ -363,19 +390,23 @@ void checkInputs(int &fps, int &distanceX, int &distanceY,
     // Move Graph in x-direction
     if (IsKeyDown(KEY_D))
     {
+        sys.setOffsetX(sys.getOffset().x + sys.getZoom().x);
         offsetX += zoomMultX;
     }
     if (IsKeyDown(KEY_A))
     {
+        sys.setOffsetX(sys.getOffset().x - sys.getZoom().x);
         offsetX -= zoomMultX;
     }
     // Move Graph in y-direction
     if (IsKeyDown(KEY_W))
     {
+        sys.setOffsetY(sys.getOffset().y + sys.getZoom().y);
         offsetY += zoomMultY;
     }
     if (IsKeyDown(KEY_S))
     {
+        sys.setOffsetY(sys.getOffset().y - sys.getZoom().y);
         offsetY -= zoomMultY;
     }
 
@@ -403,22 +434,23 @@ void checkInputs(int &fps, int &distanceX, int &distanceY,
     // Adjust padding
     if (IsKeyDown(KEY_X) && IsKeyDown(KEY_UP))
     {
+        sys.setPaddingX(sys.getPadding().x + sys.getDistance().x);
         wpadding.x += distanceX;
     }
     if (IsKeyDown(KEY_X) && IsKeyDown(KEY_DOWN) && wpadding.x >= 0)
     {
+        sys.setPaddingX(sys.getPadding().x - sys.getDistance().x);
         wpadding.x -= distanceX;
     }
     if (IsKeyDown(KEY_Y) && IsKeyDown(KEY_UP))
     {
+        sys.setPaddingY(sys.getPadding().y + sys.getDistance().y);
         wpadding.y += static_cast<float>(distanceY);
-
-        DrawText(TextFormat("wpadding: %i", wpadding.y), 400, 150, 20, BLACK);
     }
     if (IsKeyDown(KEY_Y) && IsKeyDown(KEY_DOWN) && wpadding.y >= 0)
     {
+        sys.setPaddingY(sys.getPadding().y - sys.getDistance().y);
         wpadding.y -= distanceY;
-        DrawText(TextFormat("wpadding: %i", wpadding.y), 400, 150, 20, BLACK);
     }
     if (IsKeyDown(KEY_SPACE))
     {

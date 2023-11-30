@@ -21,7 +21,9 @@ private:
     Color m_color{};
     Color m_hcolor{};
     void (*m_f)(void);
+    void (*m_def)(void);
 public:
+    Button();
     Button(int x, int y, int minWidth, int minHeight, int maxWidth, int maxHeight, int height, int width, char* content, Color color, void (*f)(void));
     Button(int x, int y, int height, int width, char* content, Color color, void (*f)(void));
     

@@ -20,6 +20,7 @@ private:
 public:
     Coordinatesystem();
     Coordinatesystem(Coordinatesystem& system);
+    Coordinatesystem(float x = 0, float y = 0, float width = 1920, float height = 1080, float zoomX = 1, float zoomY = 1, float distanceX = 20, float distanceY = 20, float offsetX = 0, float offsetY = 0, char* labelX = "X", char* labelY = "Y", float paddingX = 30, float paddingY = 30);
 
     Vector2 getZoom();
     Vector2 getDistance();
@@ -41,11 +42,15 @@ public:
     void setDistanceY(float distance);
     void setPaddingX(float padding);
     void setPaddingY(float padding);
+    void setX(float x);
+    void setY(float y);
+
+    float adjust(float val, bool x);
 
     void setValue(float& attribute, float value);
 
     void update();
-    void draw();
+    void draw(bool line = false);
 
 };
 

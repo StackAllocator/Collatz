@@ -1,6 +1,17 @@
 #include "button.h"
 
 
+Button::Button(){
+    m_x = 0;
+    m_y = 0;
+    m_width = 150;
+    m_height = 50;
+    m_content = "Button";
+    m_color = Color{100, 200, 150, 255};
+    m_hcolor = Color{100, 200, 150, 255};
+    m_f = m_def;
+};
+
 Button::Button(int x, int y, int minWidth, int minHeight, int maxWidth, int maxHeight, int width, int height, char* content, Color color, void (*f)(void)) {
     m_x = x;
     m_y = y;
@@ -26,6 +37,7 @@ Button::Button(int x, int y, int width, int height, char* content, Color color, 
     m_hcolor = color;
     m_f = f;
 }
+
 
 void Button::checkMouse()  {
     Vector2 currentMousePos = {static_cast<float>(GetMouseX()), static_cast<float>(GetMouseY())};
