@@ -1,6 +1,7 @@
 #ifndef COORDINATESYSTEM_H
 #define COORDINATESYSTEM_H
 #include "raylib.h"
+#include <iostream>
 class Coordinatesystem{
 private:
     float m_ZoomX;
@@ -29,7 +30,10 @@ public:
     Vector2 getPadding();
     char* getLabelX();
     char* getLabelY();
-
+    float getX();
+    float getY();
+    float getX0();
+    float getY0();
     void setLabelX(char* label);
     void setLabelY(char* label);
     void setOffsetX(float offset);

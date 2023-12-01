@@ -3,7 +3,8 @@
 #include "raylib.h"
 #include "Collatz.h"
 #include "Coordinatesystem.h"
+#include <iostream>
 
-void drawall(int &num, int &sequenz, int &sequenzItem, int &start, int &colorVal, int &animationSpeed, int &screenWidth, int &screenHeight, bool &pause, int &distanceX, int &distanceY, int &zoomMultX, int &zoomMultY, int &offsetX, int &offsetY, Color colors[], Vector2 wpadding, Coordinatesystem sys);
+void drawall(int &num, int &sequenz, int &sequenzItem, int &start, int &colorVal, int &animationSpeed, bool &pause, Color colors[], Coordinatesystem sys);
 
 #endif

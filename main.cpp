@@ -42,9 +42,11 @@ Vector2 AIMDf{2, 2};
 Vector2 MIADf{2, 2};
 Vector2 MIMDf{2, 2};
 int it{0};
-Coordinatesystem sys{100.0f, 100.0f, 500, 500};
+Coordinatesystem sys{100.0f, 80.0f, 1000, 1000};
+Coordinatesystem sys2{0, 0, GetScreenWidth(), GetScreenHeight()};
 auto main() -> int
 {
+    sys2.setLabelX("Iteration");
     buttons[0] = algo;
     buttons[1] = modeb1;
     buttons[2] = modeb2;
@@ -53,10 +55,12 @@ auto main() -> int
     
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight, "Collatz Conjecture Visualization");
-    SetTargetFPS(60); // Set our game to run at 60 frames-per-second
+    SetTargetFPS(120); // Set our game to run at 60 frames-per-second
 
     // Initialization
     //--------------------------------------------------------------------------------------
+    sys2.setHeight(GetScreenHeight());
+    sys2.setWidth(GetScreenWidth());
     Vector2 wpadding;
     wpadding.x = 30;
     wpadding.y = 30;
@@ -78,7 +82,7 @@ auto main() -> int
     int sequenz = 1;
     bool all = false;
     int sequenzItem = 1;
-    Color colors[colorVal * 10];
+    Color colors[colorVal * 100];
     int zoomMultX = 1.0f;
     int zoomMultY = 1.0f;
     int offsetX = 0.0f;
@@ -98,15 +102,10 @@ auto main() -> int
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
         sys.update();
+        sys2.update();
         // sys.draw();
         screenWidth = GetScreenWidth();
         screenHeight = GetScreenHeight();
-        algo.draw();
-        modeb1.draw();
-        modeb2.draw();
-        algo.checkMouse();
-        modeb1.checkMouse();
-        modeb2.checkMouse();
         
         if (drawOneState == DrawOneStates::DRAW_ALGO) {
             if (!pause) {
@@ -167,7 +166,7 @@ auto main() -> int
         DrawRectangleRec(drawOneRect, rectCol);
         DrawText("Press me!", drawOneRect.x + 5, drawOneRect.y + 12, 30, BLACK);
 
-        //checkInputs(fps, distanceX, distanceY, zoomMultX, zoomMultY, offsetX, offsetY, start, animationSpeed, colorVal, sequenz, wpadding, pause);
+        checkInputs(fps, distanceX, distanceY, zoomMultX, zoomMultY, offsetX, offsetY, start, animationSpeed, colorVal, sequenz, wpadding, pause);
         BeginDrawing();
 
         ClearBackground(RAYWHITE);
@@ -176,20 +175,22 @@ auto main() -> int
         pos.x = 30;
         pos.y = screenHeight - 30;
         Color col;
-        col.r = GetRandomValue(0, 255);
-        col.g = GetRandomValue(0, 255);
-        col.b = GetRandomValue(0, 255);
+        col.r = (255 - sequenzItem * 3) % 256;
+        col.g = sequenzItem % 256;
+        col.b = (sequenzItem * 2) % 256;
         col.a = 255; // alpha value
 
         // if (sequenz < sizeof(colors)/sizeof(col)) {
-        colors[sequenz] = col;
+            colors[sequenz] = col;
         // } else {
         //    colors.push_back(col);
         //}
 
         if (drawOneState == DrawOneStates::DRAW_ALL)
         {
-            drawall(num, sequenz, sequenzItem, start, colorVal, animationSpeed, screenWidth, screenHeight, pause, distanceX, distanceY, zoomMultX, zoomMultY, offsetX, offsetY, colors, wpadding, sys);
+            sys2.update();
+            drawall(num, sequenz, sequenzItem, start, colorVal, animationSpeed, pause, colors, sys2);
+
         }
 
         else
@@ -234,7 +235,16 @@ auto main() -> int
         // display test
 
         // -----------------------------------------------------------------------------------------------------------------------------------
-
+        for (int i = 0; i < 3; i++) {
+            buttons[i].draw();
+            buttons[i].checkMouse();
+        }
+        // algo.draw();
+        // modeb1.draw();
+        // modeb2.draw();
+        // algo.checkMouse();
+        // modeb1.checkMouse();
+        // modeb2.checkMouse();
         EndDrawing();
         //----------------------------------------------------------------------------------
     }
@@ -302,71 +312,71 @@ void checkInputs(int &fps, int &distanceX, int &distanceY,
                  int &start, int &animationSpeed, int &colorVal, int &sequenz, Vector2& wpadding, bool& pause)
 {
     // Zoom y-direction
-    if (IsKeyDown(KEY_UP) && !IsKeyDown(KEY_LEFT_CONTROL) &&!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y) && fps == 0)
-    {
-        sys.setDistanceY(sys.getDistance().y+1);
-        distanceY++;
-        if (distanceY >= 40 && zoomMultY > 1 || sys.getDistance().y >= 40 && sys.getZoom().y > 1)
-        {
-            sys.setDistanceY(20);
-            sys.setZoomY(sys.getZoom().y / 2);
-            distanceY = 20;
-            zoomMultY /= 2;
-        }
+    // if (IsKeyDown(KEY_UP) && !IsKeyDown(KEY_LEFT_CONTROL) &&!IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y) && fps == 0)
+    // {
+    //     sys.setDistanceY(sys.getDistance().y+1);
+    //     distanceY++;
+    //     if (distanceY >= 40 && zoomMultY > 1 || sys.getDistance().y >= 40 && sys.getZoom().y > 1)
+    //     {
+    //         sys.setDistanceY(20);
+    //         sys.setZoomY(sys.getZoom().y / 2);
+    //         distanceY = 20;
+    //         zoomMultY /= 2;
+    //     }
 
-        if (zoomMultY < 1 || sys.getZoom().y < 1)
-        {
-            sys.setDistanceY(20);
-            sys.setZoomY(1);
-            zoomMultY = 1;
-            distanceY = 20;
-        }
-    }
-    else if (IsKeyDown(KEY_DOWN) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y) && fps == 0)
-    {
-        sys.setDistanceY(sys.getDistance().y - 1);
-        distanceY--;
-        if (distanceY <= 20 || sys.getDistance().y <= 20)
-        {
-            sys.setDistanceY(40);
-            sys.setZoomY(sys.getZoom().y * 2);
-            distanceY = 40;
-            zoomMultY *= 2;
-        }
-    }
-    // Zoom x-direction
-    if (IsKeyDown(KEY_RIGHT) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && fps == 0)
-    {
-        sys.setDistanceX(sys.getDistance().x + 1);
-        distanceX++;
-        if (distanceX >= 40 && zoomMultX > 1)
-        {
-            sys.setDistanceX(20);
-            sys.setZoomX(sys.getZoom().x / 2);
-            distanceX = 20;
-            zoomMultX /= 2;
-        }
+    //     if (zoomMultY < 1 || sys.getZoom().y < 1)
+    //     {
+    //         sys.setDistanceY(20);
+    //         sys.setZoomY(1);
+    //         zoomMultY = 1;
+    //         distanceY = 20;
+    //     }
+    // }
+    // else if (IsKeyDown(KEY_DOWN) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && !IsKeyDown(KEY_X) && !IsKeyDown(KEY_Y) && fps == 0)
+    // {
+    //     sys.setDistanceY(sys.getDistance().y - 1);
+    //     distanceY--;
+    //     if (distanceY <= 20 || sys.getDistance().y <= 20)
+    //     {
+    //         sys.setDistanceY(40);
+    //         sys.setZoomY(sys.getZoom().y * 2);
+    //         distanceY = 40;
+    //         zoomMultY *= 2;
+    //     }
+    // }
+    // // Zoom x-direction
+    // if (IsKeyDown(KEY_RIGHT) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && fps == 0)
+    // {
+    //     sys.setDistanceX(sys.getDistance().x + 1);
+    //     distanceX++;
+    //     if (distanceX >= 40 && zoomMultX > 1)
+    //     {
+    //         sys.setDistanceX(20);
+    //         sys.setZoomX(sys.getZoom().x / 2);
+    //         distanceX = 20;
+    //         zoomMultX /= 2;
+    //     }
 
-        if (zoomMultX < 1)
-        {
-            sys.setDistanceX(40);
-            sys.setZoomX(1);
-            zoomMultX = 1;
-            distanceX = 40;
-        }
-    }
-    else if (IsKeyDown(KEY_LEFT) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && fps == 0)
-    {
-        sys.setDistanceX(sys.getDistance().x - 1);
-        distanceX--;
-        if (distanceX <= 20)
-        {
-            sys.setDistanceX(40);
-            sys.setZoomX(sys.getZoom().x * 2);
-            distanceX = 40;
-            zoomMultX *= 2;
-        }
-    }
+    //     if (zoomMultX < 1)
+    //     {
+    //         sys.setDistanceX(40);
+    //         sys.setZoomX(1);
+    //         zoomMultX = 1;
+    //         distanceX = 40;
+    //     }
+    // }
+    // else if (IsKeyDown(KEY_LEFT) && !IsKeyDown(KEY_LEFT_CONTROL) && !IsKeyDown(KEY_LEFT_SHIFT) && fps == 0)
+    // {
+    //     sys.setDistanceX(sys.getDistance().x - 1);
+    //     distanceX--;
+    //     if (distanceX <= 20)
+    //     {
+    //         sys.setDistanceX(40);
+    //         sys.setZoomX(sys.getZoom().x * 2);
+    //         distanceX = 40;
+    //         zoomMultX *= 2;
+    //     }
+    // }
     // adjust maximum number for sequenzes
     if (IsKeyDown(KEY_PERIOD) && !IsKeyDown(KEY_LEFT_CONTROL) && colorVal > 1)
     {
@@ -387,28 +397,28 @@ void checkInputs(int &fps, int &distanceX, int &distanceY,
         start++;
     }
 
-    // Move Graph in x-direction
-    if (IsKeyDown(KEY_D))
-    {
-        sys.setOffsetX(sys.getOffset().x + sys.getZoom().x);
-        offsetX += zoomMultX;
-    }
-    if (IsKeyDown(KEY_A))
-    {
-        sys.setOffsetX(sys.getOffset().x - sys.getZoom().x);
-        offsetX -= zoomMultX;
-    }
-    // Move Graph in y-direction
-    if (IsKeyDown(KEY_W))
-    {
-        sys.setOffsetY(sys.getOffset().y + sys.getZoom().y);
-        offsetY += zoomMultY;
-    }
-    if (IsKeyDown(KEY_S))
-    {
-        sys.setOffsetY(sys.getOffset().y - sys.getZoom().y);
-        offsetY -= zoomMultY;
-    }
+    // // Move Graph in x-direction
+    // if (IsKeyDown(KEY_D))
+    // {
+    //     sys.setOffsetX(sys.getOffset().x + sys.getZoom().x);
+    //     offsetX += zoomMultX;
+    // }
+    // if (IsKeyDown(KEY_A))
+    // {
+    //     sys.setOffsetX(sys.getOffset().x - sys.getZoom().x);
+    //     offsetX -= zoomMultX;
+    // }
+    // // Move Graph in y-direction
+    // if (IsKeyDown(KEY_W))
+    // {
+    //     sys.setOffsetY(sys.getOffset().y + sys.getZoom().y);
+    //     offsetY += zoomMultY;
+    // }
+    // if (IsKeyDown(KEY_S))
+    // {
+    //     sys.setOffsetY(sys.getOffset().y - sys.getZoom().y);
+    //     offsetY -= zoomMultY;
+    // }
 
     // change speed for animation
     if (IsKeyDown(KEY_L))
@@ -432,26 +442,26 @@ void checkInputs(int &fps, int &distanceX, int &distanceY,
         DrawText(TextFormat("animationSpeed: %i", animationSpeed + 1), 400, 150, 20, BLACK);
     }
     // Adjust padding
-    if (IsKeyDown(KEY_X) && IsKeyDown(KEY_UP))
-    {
-        sys.setPaddingX(sys.getPadding().x + sys.getDistance().x);
-        wpadding.x += distanceX;
-    }
-    if (IsKeyDown(KEY_X) && IsKeyDown(KEY_DOWN) && wpadding.x >= 0)
-    {
-        sys.setPaddingX(sys.getPadding().x - sys.getDistance().x);
-        wpadding.x -= distanceX;
-    }
-    if (IsKeyDown(KEY_Y) && IsKeyDown(KEY_UP))
-    {
-        sys.setPaddingY(sys.getPadding().y + sys.getDistance().y);
-        wpadding.y += static_cast<float>(distanceY);
-    }
-    if (IsKeyDown(KEY_Y) && IsKeyDown(KEY_DOWN) && wpadding.y >= 0)
-    {
-        sys.setPaddingY(sys.getPadding().y - sys.getDistance().y);
-        wpadding.y -= distanceY;
-    }
+    // if (IsKeyDown(KEY_X) && IsKeyDown(KEY_UP))
+    // {
+    //     sys.setPaddingX(sys.getPadding().x + sys.getDistance().x);
+    //     wpadding.x += distanceX;
+    // }
+    // if (IsKeyDown(KEY_X) && IsKeyDown(KEY_DOWN) && wpadding.x >= 0)
+    // {
+    //     sys.setPaddingX(sys.getPadding().x - sys.getDistance().x);
+    //     wpadding.x -= distanceX;
+    // }
+    // if (IsKeyDown(KEY_Y) && IsKeyDown(KEY_UP))
+    // {
+    //     sys.setPaddingY(sys.getPadding().y + sys.getDistance().y);
+    //     wpadding.y += static_cast<float>(distanceY);
+    // }
+    // if (IsKeyDown(KEY_Y) && IsKeyDown(KEY_DOWN) && wpadding.y >= 0)
+    // {
+    //     sys.setPaddingY(sys.getPadding().y - sys.getDistance().y);
+    //     wpadding.y -= distanceY;
+    // }
     if (IsKeyDown(KEY_SPACE))
     {
         std::cout << "hey";

@@ -2,8 +2,9 @@
 Vector2 pos{};
 Color col{};
 
-void drawall(int &num, int &sequenz, int &sequenzItem, int &start, int &colorVal, int &animationSpeed, int &screenWidth, int &screenHeight, bool &pause, int &distanceX, int &distanceY, int &zoomMultX, int &zoomMultY, int &offsetX, int &offsetY, Color colors[], Vector2 wpadding, Coordinatesystem sys)
+void drawall(int &num, int &sequenz, int &sequenzItem, int &start, int &colorVal, int &animationSpeed, bool &pause, Color colors[], Coordinatesystem sys)
 {
+    sys.draw();
     int txtposition = 200;
     if (num == 1 && sequenz < colorVal && !pause)
     {
@@ -14,23 +15,23 @@ void drawall(int &num, int &sequenz, int &sequenzItem, int &start, int &colorVal
     if (animationSpeed > 0)
     {
         sequenzItem += animationSpeed;
-        DrawText(TextFormat("sequenzItem: %i", sequenzItem), screenWidth - txtposition * 2, 50, 20, BLACK);
+        DrawText(TextFormat("sequenzItem: %i", sequenzItem), GetScreenWidth() - txtposition * 2, 50, 20, BLACK);
 
-        DrawText(TextFormat("animationSpeed: %i", animationSpeed), screenWidth - txtposition * 2, 100, 20, BLACK);
+        DrawText(TextFormat("animationSpeed: %i", animationSpeed), GetScreenWidth() - txtposition * 2, 100, 20, BLACK);
     }
     else
     {
         sequenzItem = sequenzItem - 1 / animationSpeed;
-        DrawText(TextFormat("sequenzItem: 1/%i", -sequenzItem), screenWidth - txtposition * 2, 50, 20, BLACK);
+        DrawText(TextFormat("sequenzItem: 1/%i", -sequenzItem), GetScreenWidth() - txtposition * 2, 50, 20, BLACK);
 
-        DrawText(TextFormat("animationSpeed: %i", animationSpeed), screenWidth - txtposition * 2, 100, 20, BLACK);
+        DrawText(TextFormat("animationSpeed: %i", animationSpeed), GetScreenWidth() - txtposition * 2, 100, 20, BLACK);
     }
     for (int i = start; i < sequenz; i++)
     {
         num = i;
         int count = 0;
-        int old_y = screenHeight - wpadding.y - num * distanceY / zoomMultY + (distanceY * offsetY / zoomMultY);
-        int old_x = wpadding.x - (distanceX * offsetX / zoomMultX);
+        int old_y = sys.adjust(num, false);
+        int old_x = sys.adjust(0, true);
         pos.y = old_y;
         pos.x = old_x;
         do
@@ -39,18 +40,18 @@ void drawall(int &num, int &sequenz, int &sequenzItem, int &start, int &colorVal
             count++;
             old_x = pos.x;
             old_y = pos.y;
-            pos.y = screenHeight - wpadding.y - distanceY * num / zoomMultY + (offsetY * distanceY / zoomMultY);
-            pos.x = wpadding.x + count * distanceX / zoomMultX - (offsetX * distanceX / zoomMultX);
+            pos.y = sys.adjust(num, false);
+            pos.x = sys.adjust(count, true);
             DrawLine(old_x, old_y, pos.x, pos.y, colors[i]);
         } while ((num > 1));
-        DrawText(TextFormat("num: %i", num), screenWidth - 500, 650, 20, BLACK);
+        DrawText(TextFormat("num: %i", num), GetScreenWidth() - 500, 650, 20, BLACK);
     }
     if (sequenz > 0)
     {
         num = sequenz;
         int count = 0;
-        int old_y = screenHeight - wpadding.y - num * distanceY / zoomMultY + (distanceY * offsetY / zoomMultY);
-        int old_x = wpadding.x - (distanceX * offsetX / zoomMultX);
+        int old_y = sys.adjust(num, false);
+        int old_x = sys.adjust(0, true);
         pos.y = old_y;
         pos.x = old_x;
         while (num > 1 && count < sequenzItem - 1)
@@ -59,27 +60,24 @@ void drawall(int &num, int &sequenz, int &sequenzItem, int &start, int &colorVal
             count++;
             old_x = pos.x;
             old_y = pos.y;
-            pos.y = screenHeight - wpadding.y - distanceY * num / zoomMultY + (offsetY * distanceY / zoomMultY);
-            pos.x = wpadding.x + count * distanceX / zoomMultX - (offsetX * distanceX / zoomMultX);
+            pos.y = sys.adjust(num, false);
+            pos.x = sys.adjust(count, true);
             DrawLine(old_x, old_y, pos.x, pos.y, colors[sequenz]);
         }
-    }
-
-    pos.x = wpadding.x;
-    pos.y = wpadding.y - 30;
+    }       
     for (int i = start; i < sequenz; i++)
     {
         num = i;
         int count = 0;
-        pos.x = wpadding.x - ((offsetX)*distanceX / zoomMultX);
-        pos.y = screenHeight - wpadding.y - num * distanceY / zoomMultY + (offsetY * distanceY / zoomMultY);
+        pos.x = sys.adjust(0, true);
+        pos.y = sys.adjust(num, false);
         do
         {
             num = Collatz::next(num);
             count++;
             DrawCircle(pos.x, pos.y, 3, colors[i]);
-            pos.y = screenHeight - wpadding.y - distanceY * num / zoomMultY + (offsetY * distanceY / zoomMultY);
-            pos.x = wpadding.x + count * distanceX / zoomMultX - (offsetX * distanceX / zoomMultX);
+            pos.y = sys.adjust(num, false);
+            pos.x = sys.adjust(count, true);
         } while ((num > 1));
         DrawCircle(pos.x, pos.y, 3, colors[i]);
     }
@@ -87,43 +85,43 @@ void drawall(int &num, int &sequenz, int &sequenzItem, int &start, int &colorVal
     {
         num = sequenz;
         int count = 0;
-        pos.x = wpadding.x - ((offsetX)*distanceX / zoomMultX);
-        pos.y = screenHeight - wpadding.y - num * distanceY / zoomMultY + (offsetY * distanceY / zoomMultY);
+        pos.x = sys.adjust(0, true);
+        pos.y = sys.adjust(num, false);
         while (num > 1 && count < sequenzItem - 1)
         {
             num = Collatz::next(num);
             count++;
             DrawCircle(pos.x, pos.y, 3, colors[sequenz]);
-            pos.y = screenHeight - wpadding.y - distanceY * num / zoomMultY + (offsetY * distanceY / zoomMultY);
-            pos.x = wpadding.x + count * distanceX / zoomMultX - (offsetX * distanceX / zoomMultX);
+            pos.y = sys.adjust(num, false);
+            pos.x = sys.adjust(count, true);
         }
         // std::cout << num << ", ";
     }
     // if (num == 1) {
     //     std::cout << std::endl;
     // }
-    DrawLine(wpadding.x, 0, wpadding.x, screenHeight, BLACK);
-    for (int i = 0; i <= screenHeight - wpadding.y; i += distanceY)
-    {
-        int n = (int)((i * zoomMultY) / distanceY) + (offsetY);
-        DrawText(TextFormat("%i", n), 5, screenHeight - wpadding.y - i, 15, BLUE);
-        DrawLine(wpadding.x - 5, screenHeight - wpadding.y - i,
-                 wpadding.x + 5, screenHeight - wpadding.y - i, BLACK);
-        DrawLine(0, screenHeight - wpadding.y, screenWidth,
-                 screenHeight - wpadding.y, BLACK);
-    }
-    for (int i = 0; i < screenWidth; i += distanceX)
-    {
-        int n = (i * zoomMultX) / distanceX + (offsetX);
-        DrawText(TextFormat("%i", n), wpadding.x + i,
-                 screenHeight - wpadding.y + 10, 15, BLACK);
-        DrawLine(wpadding.x + i, screenHeight - wpadding.y + 5,
-                 wpadding.x + i, screenHeight - wpadding.y - 5, BLACK);
-    }
+    // DrawLine(wpadding.x, 0, wpadding.x, screenHeight, BLACK);
+    // for (int i = 0; i <= screenHeight - wpadding.y; i += distanceY)
+    // {
+    //     int n = (int)((i * zoomMultY) / distanceY) + (offsetY);
+    //     DrawText(TextFormat("%i", n), 5, screenHeight - wpadding.y - i, 15, BLUE);
+    //     DrawLine(wpadding.x - 5, screenHeight - wpadding.y - i,
+    //              wpadding.x + 5, screenHeight - wpadding.y - i, BLACK);
+    //     DrawLine(0, screenHeight - wpadding.y, screenWidth,
+    //              screenHeight - wpadding.y, BLACK);
+    // }
+    // for (int i = 0; i < screenWidth; i += distanceX)
+    // {
+    //     int n = (i * zoomMultX) / distanceX + (offsetX);
+    //     DrawText(TextFormat("%i", n), wpadding.x + i,
+    //              screenHeight - wpadding.y + 10, 15, BLACK);
+    //     DrawLine(wpadding.x + i, screenHeight - wpadding.y + 5,
+    //              wpadding.x + i, screenHeight - wpadding.y - 5, BLACK);
+    // }
     // sys.update();
 
-    DrawLine(wpadding.x, screenHeight - wpadding.y + offsetY * distanceY, wpadding.x - offsetX * distanceX, screenHeight - wpadding.y + offsetY * distanceY, GRAY);
-    DrawLine(wpadding.x - offsetX * distanceX, screenHeight - wpadding.y, wpadding.x - offsetX * distanceX, screenHeight - wpadding.y + offsetY * distanceY, GRAY);
+    DrawLine(sys.getX0(), sys.adjust(0, false), sys.adjust(0, true), sys.adjust(0, false), GRAY);
+    DrawLine(sys.adjust(0, true), sys.getY0(), sys.adjust(0, true), sys.adjust(0, false), GRAY);
     // DrawText(TextFormat("FPS: %i", fps), screenWidth - txtposition, 50, 20, BLACK);
     // DrawText(TextFormat("sequenzItem: %i", sequenzItem), screenWidth - txtposition, 100, 20, BLACK);
     // DrawText(TextFormat("sequenz: %i/%i", sequenz, colorVal), screenWidth - txtposition, 150, 20, BLACK);

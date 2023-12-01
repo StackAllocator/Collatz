@@ -3,6 +3,7 @@
 void draw(int sx, int sy, int K, int it, modes mode1, modes mode2, Vector2 AIADf, Vector2 AIMDf, Vector2 MIADf, Vector2 MIMDf, Coordinatesystem sys) {
     // offsetX--;
     // offsetY--;
+    
     sys.draw(true);
     // DrawLine(wpadding.x, 0, wpadding.x, screenHeight, BLACK);
     // for (int i = 0; i <= screenHeight - wpadding.y; i += distanceY)
